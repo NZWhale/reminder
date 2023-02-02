@@ -167,8 +167,8 @@ export default class BotProcessor {
             return
         }
         this.weeklyJobs.mondeyJob = new CronJob(
-            // '58 14 * * Mon',
-            '19 0 * * FRI',
+            '58 14 * * FRI',
+            // '19 0 * * FRI',
             () => {
                 if (!this.bot) {
                     return
@@ -180,8 +180,8 @@ export default class BotProcessor {
             'America/Los_Angeles'
         );
         this.weeklyJobs.thursdayJob = new CronJob(
-            // '58 14 * * Thu,
-            '25 0 * * FRI',
+            '58 14 * * FRI',
+            // '25 0 * * FRI',
                         function () {
                 console.log('You will see this message every second');
             },
