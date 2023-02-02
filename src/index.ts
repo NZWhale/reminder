@@ -28,6 +28,9 @@ async function main(): Promise<void> {
 void main();
 
 function validateConfig(config: IConfig): void{
+    // Object.keys(config).forEach((key: string) => {
+        
+    // })
     if(Object.values(config.db).some(val => !val)){
         throw new Error('incorrect db config')
     }
