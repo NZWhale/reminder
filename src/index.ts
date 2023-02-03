@@ -6,6 +6,7 @@ import RegistrationScene from './bot/scenes/RegistrationScene';
 import NewReminderScene from './bot/scenes/NewReminderScene';
 import GetRemindersScene from './bot/scenes/GetRemindersScene';
 import NewChatReminderScene from './bot/scenes/NewChatReminderScene';
+import GroupReminderScene from './bot/scenes/GroupReminderScene';
 
 async function main(): Promise<void> {
     try {
@@ -17,7 +18,8 @@ async function main(): Promise<void> {
             new RegistrationScene(),
             new NewReminderScene(),
             new GetRemindersScene(),
-            new NewChatReminderScene()
+            new NewChatReminderScene(),
+            new GroupReminderScene()
         )
     } catch (err) {
         console.error(err instanceof Error ? err : new Error(String(err)));
