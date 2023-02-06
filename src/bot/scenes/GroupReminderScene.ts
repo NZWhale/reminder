@@ -74,7 +74,7 @@ export default class GroupReminderScene {
         const { id, type } = chat
         this.telegram = ctx.telegram
         ctx.deleteMessage(message.message_id)
-        if (type === 'group' && (`${chat.id}` === ATMO_CHAT.ID || `${chat.id}` === TEST_CHAT.ID)) {
+        if (`${chat.id}` === ATMO_CHAT.ID || `${chat.id}` === TEST_CHAT.ID) {
             this.weeklyMeetReminder(id)
         }
     }
