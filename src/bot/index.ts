@@ -148,32 +148,36 @@ export default class Bot {
             return
         }
         chats.forEach(chat => {
-            this.weeklyJobs.mondeyJob[chat.TITLE] = new CronJob(
-                '16 10 * * 1',
-                () => {
-                    if (!this.bot) {
-                        return
-                    }
-                    this.bot.telegram.sendSticker(chat.ID, ERMASTATUS.file_id)
-                },
-                null,
-                true,
-                'Europe/Moscow'
-            )
-            console.log('first job started', this.weeklyJobs.mondeyJob)
-            this.weeklyJobs.thursdayJob[chat.TITLE] = new CronJob(
-                '49 15 * * 4',
-                () => {
-                    if (!this.bot) {
-                        return
-                    }
-                    this.bot.telegram.sendSticker(chat.ID, ERMASTATUS.file_id)
-                },
-                null,
-                true,
-                'Europe/Moscow'
-            )
-            console.log('second job started', this.weeklyJobs.thursdayJob)
+            if (!Object.hasOwn(this.weeklyJobs.mondeyJob, chat.TITLE)) {
+                this.weeklyJobs.mondeyJob[chat.TITLE] = new CronJob(
+                    '49 15 * * 1',
+                    () => {
+                        if (!this.bot) {
+                            return
+                        }
+                        this.bot.telegram.sendSticker(chat.ID, ERMASTATUS.file_id)
+                    },
+                    null,
+                    true,
+                    'Europe/Moscow'
+                )
+                console.log('first job started', this.weeklyJobs.mondeyJob)
+            }
+            if (!Object.hasOwn(this.weeklyJobs.thursdayJob, chat.TITLE)) {
+                this.weeklyJobs.thursdayJob[chat.TITLE] = new CronJob(
+                    '49 15 * * 4',
+                    () => {
+                        if (!this.bot) {
+                            return
+                        }
+                        this.bot.telegram.sendSticker(chat.ID, ERMASTATUS.file_id)
+                    },
+                    null,
+                    true,
+                    'Europe/Moscow'
+                )
+                console.log('second job started', this.weeklyJobs.thursdayJob)
+            }
         })
     }
 }
