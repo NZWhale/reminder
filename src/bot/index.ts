@@ -150,7 +150,7 @@ export default class Bot {
         chats.forEach(chat => {
             if (!Object.hasOwn(this.weeklyJobs.mondeyJob, chat.TITLE)) {
                 this.weeklyJobs.mondeyJob[chat.TITLE] = new CronJob(
-                    '49 15 * * 1',
+                    '59 15 * * 1',
                     () => {
                         if (!this.bot) {
                             return
@@ -165,7 +165,7 @@ export default class Bot {
             }
             if (!Object.hasOwn(this.weeklyJobs.thursdayJob, chat.TITLE)) {
                 this.weeklyJobs.thursdayJob[chat.TITLE] = new CronJob(
-                    '49 15 * * 4',
+                    '59 15 * * 4',
                     () => {
                         if (!this.bot) {
                             return
