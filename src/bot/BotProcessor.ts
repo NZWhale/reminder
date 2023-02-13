@@ -16,32 +16,11 @@ export default class BotProcessor {
     private bot: Telegraf | null = null
 
     constructor(
-        private token: string,
-        private database: Database,
         private registrationScene: RegistrationScene,
         private newReminderScene: NewReminderScene,
         private getRemindersScene: GetRemindersScene,
         private newChatReminder: NewChatReminderScene,
-        private groupReminderScene: GroupReminderScene
     ) {
-
-        this.bot = new Telegraf(this.token);
-        this.bot.command('start', this.start.bind(this))
-        this.bot.hears('напомни про мит', (ctx) => this.groupReminderScene.enter(ctx))
-        this.bot.on('callback_query', async (ctx: any) => await this.onCallbackQuery(ctx, ctx.callbackQuery.data))
-        this.bot.launch();
-        process.once('SIGINT', () => {
-            if (!this.bot) {
-                return
-            }
-            this.bot.stop('SIGINT')
-        });
-        process.once('SIGTERM', () => {
-            if (!this.bot) {
-                return
-            }
-            this.bot.stop('SIGTERM')
-        });
 }
 
     async onCallbackQuery(ctx: NarrowedContext<Context<Update>, Update.CallbackQueryUpdate<CallbackQuery>>, event: string) {
@@ -85,33 +64,5 @@ export default class BotProcessor {
             default:
                 break
         }
-    }
-
-
-    async start(ctx: NarrowedContext<Context<Update>, {
-        message: Update.New & Update.NonChannel & Message.TextMessage;
-        update_id: number;
-    }>) {
-        let markDown
-        const userId: number = ctx.from.id
-        const chatType = ctx.update.message.chat.type
-        if(chatType === 'group' || chatType === 'supergroup'){
-            ctx.deleteMessage(ctx.message.message_id)
-            return
-        }
-        if (!await this.database.isUserExist(userId)) {
-            markDown = Markup.inlineKeyboard([
-                Markup.button.callback('Registration', 'registration'),
-            ]);
-            ctx.replyWithMarkdownV2('U should register', markDown)
-            return
-        }
-        markDown = Markup.inlineKeyboard([
-            Markup.button.callback('New Reminder', 'new_reminder'),
-            Markup.button.callback('New Chat Reminder', 'new_chat_reminder'),
-            Markup.button.callback('My Reminders', 'get_reminders'),
-            Markup.button.callback('My Reminders', 'get_reminders'),
-        ]);
-        ctx.replyWithMarkdownV2('Wazzzup', markDown)
     }
 }

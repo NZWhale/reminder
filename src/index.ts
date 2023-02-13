@@ -1,7 +1,7 @@
 import process from 'process';
 import Database from './database';
 import configuration, { IConfig } from './configuration';
-import BotProcessor from './bot/Bot';
+import BotProcessor from './bot';
 import RegistrationScene from './bot/scenes/RegistrationScene';
 import NewReminderScene from './bot/scenes/NewReminderScene';
 import GetRemindersScene from './bot/scenes/GetRemindersScene';
