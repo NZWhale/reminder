@@ -1,17 +1,10 @@
-// import { Reminder } from "../interfaces";
-import { Telegraf, NarrowedContext, Markup, Context } from 'telegraf';
+import { Telegraf, NarrowedContext, Markup, Context, Scenes, session } from 'telegraf';
 import { Update, Message, CallbackQuery } from 'telegraf/types';
 import { CronJob } from 'cron'
-
 import Database from "../database";
-import RegistrationScene from "./scenes/RegistrationScene";
-import NewReminderScene from "./scenes/NewReminderScene";
-import GetRemindersScene from "./scenes/GetRemindersScene";
 import NewChatReminderScene from "./scenes/NewChatReminderScene";
-import GroupReminderScene from './scenes/GroupReminderScene';
-import BotProcessor from './BotProcessor';
-
-
+import { log } from '@bb/source-log-ts';
+import { escape } from './scenes/helpers'
 
 const TEST_CHAT: CHAT = {
     TITLE: 'test',
@@ -56,11 +49,13 @@ interface WeeklyJobs {
     },
 }
 
+
+
 export default class Bot {
     // private reminds: Array<Reminder> = []
     // private updates: Array<Update> = []
     private bot: Telegraf | null = null
-    private processor: BotProcessor
+    private stage: any
     private weeklyJobs: WeeklyJobs = {
         mondeyJob: {} as {
             [key: string]: CronJob;
@@ -74,17 +69,20 @@ export default class Bot {
     constructor(
         private token: string,
         private database: Database,
-        private registrationScene: RegistrationScene,
-        private newReminderScene: NewReminderScene,
-        private getRemindersScene: GetRemindersScene,
-        private newChatReminder: NewChatReminderScene,
-        private groupReminderScene: GroupReminderScene
     ) {
-        this.processor = new BotProcessor(this.registrationScene, this.newReminderScene, this.getRemindersScene, this.newChatReminder)
         this.bot = new Telegraf(this.token);
+        this.stage = new Scenes.Stage(
+            [
+                NewChatReminderScene,
+                // NewReminderScene,
+            ]
+        )
         this.bot.command('start', this.start.bind(this))
-        // this.bot.hears('напомни про мит', (ctx) => this.groupReminderScene.enter(ctx))
-        this.bot.on('callback_query', async (ctx: any) => await this.processor.onCallbackQuery(ctx, ctx.callbackQuery.data))
+        this.bot.action('new_chat_reminder', this.newChatReminder.bind(this))
+        // this.bot.action('new_reminder', this.newReminder.bind(this))
+
+        this.bot.use(session());
+        this.bot.use(this.stage.middleware());
         this.bot.launch();
         process.once('SIGINT', () => {
             if (!this.bot) {
@@ -101,12 +99,9 @@ export default class Bot {
     }
 
 
-    async start(ctx: NarrowedContext<Context<Update>, {
-        message: Update.New & Update.NonChannel & Message.TextMessage;
-        update_id: number;
-    }>) {
-        let markDown
+    private async start(ctx: any): Promise<void> {
         const userId: number = ctx.from.id
+        const chatId: number = ctx.chat.id
         const chatType = ctx.update.message.chat.type
         this.weeklyMeetReminder([TEST_CHAT, ATMO_CHAT])
         if (chatType === 'group' || chatType === 'supergroup') {
@@ -114,18 +109,21 @@ export default class Bot {
             return
         }
         if (!await this.database.isUserExist(userId)) {
-            markDown = Markup.inlineKeyboard([
-                Markup.button.callback('Registration', 'registration'),
-            ]);
-            ctx.replyWithMarkdownV2('U should register', markDown)
+            const text = `You are not registred, please contact admin for solve this issue. Your ID is - ${userId}`
+            await this.sendMessage(chatId, text)
             return
         }
+        await this.replyWithMarkdown(
+            ctx,
+            [['New Reminder', 'new_reminder'], ['New Chat Reminder', 'new_chat_reminder']],
+            'Wazzzup'
+        )
+    }
 
-        markDown = Markup.inlineKeyboard([
-            Markup.button.callback('New Reminder', 'new_reminder'),
-            Markup.button.callback('New Chat Reminder', 'new_chat_reminder'),
-        ]);
-        ctx.replyWithMarkdownV2('Wazzzup', markDown)
+    private async newChatReminder(ctx: any): Promise<void> {
+        const callbackQuery = ctx.callbackQuery
+        const scene = this.stage.scenes.get('new_chat_reminder')
+        scene.enter()
     }
 
     // private startGroupReminder(ctx: Context<Update>) {
@@ -141,6 +139,53 @@ export default class Bot {
     //         this.weeklyMeetReminder(id)
     //     }
     // }
+
+
+
+    private async replyWithMarkdown(ctx: any, buttons: Array<Array<string>>, text: string): Promise<number> {
+        try {
+            const markDown = Markup.inlineKeyboard(buttons.map(mark => {
+                if (mark[2] === 'webapp') {
+                    return Markup.button.webApp(mark[0], mark[1])
+                }
+                return Markup.button.callback(mark[0], mark[1])
+            }));
+            text = escape(text);
+            const msg = await ctx.replyWithMarkdownV2(text, markDown)
+            await this.deleteMessage(ctx.chat.id, msg.message_id-1)
+            return msg.message_id
+        } catch (e: unknown) {
+            log.error(e as Error)
+            return -1
+        }
+    }
+
+    private async sendMessage(chatId: number, text: string): Promise<number> {
+        try {
+            if (!this.bot) {
+                throw new Error('BOT_NOT_EXIST')
+            }
+            text = escape(text);
+            const msg = await this.bot.telegram.sendMessage(chatId, text)
+            await this.deleteMessage(chatId, msg.message_id-1)
+            return msg.message_id
+        } catch (e: unknown) {
+            log.error(e as Error)
+            return -1
+        }
+    }
+
+    private async deleteMessage(chatId: number, msgId: number): Promise<boolean> {
+        try {
+            if (!this.bot) {
+                throw new Error('BOT_NOT_EXIST')
+            }
+            return await this.bot.telegram.deleteMessage(chatId, msgId)
+        } catch (e: unknown) {
+            log.error(e as Error)
+            return false
+        }
+    }
 
     private weeklyMeetReminder(chats: Array<CHAT>) {
         if (!this.bot) {
@@ -161,7 +206,7 @@ export default class Bot {
                     true,
                     'Europe/Moscow'
                 )
-                console.log('first job started', this.weeklyJobs.mondeyJob)
+                // console.log('first job started', this.weeklyJobs.mondeyJob)
             }
             if (!Object.hasOwn(this.weeklyJobs.thursdayJob, chat.TITLE)) {
                 this.weeklyJobs.thursdayJob[chat.TITLE] = new CronJob(
@@ -176,7 +221,7 @@ export default class Bot {
                     true,
                     'Europe/Moscow'
                 )
-                console.log('second job started', this.weeklyJobs.thursdayJob)
+                // console.log('second job started', this.weeklyJobs.thursdayJob)
             }
         })
     }

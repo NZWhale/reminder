@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@bb/source-log-ts": "^1.0.0-dev.7",
     "cron": "^2.2.0",
     "dotenv": "^16.0.3",
     "pg": "^8.9.0",

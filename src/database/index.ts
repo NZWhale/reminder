@@ -15,7 +15,7 @@ export default class Database {
 
     async isUserExist(userId: number): Promise<boolean> {
         if (userId) {
-            return false
+            return true
         }
         return true
     }
